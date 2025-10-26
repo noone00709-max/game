@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🎨 Quick Color Tap 3D — Farcaster Mini App</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(135deg, #0a0e13 0%, #1a1f2e 100%);
+    color: #e7ecf0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 20px;
+  }
+  .wrap { width: min(900px, 96vw); position: relative; }
+  .card { background: #12171b; border: 1px solid #1f2a32; border-radius: 14px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,11,14,.85); backdrop-filter: blur(4px); padding: 16px; z-index: 100; }
+  .hidden { display: none !important; }
+  
+  h1 {
+    font-size: 28px;
+    font-weight: 900;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 10px rgba(168,85,247,0.5);
+  }
+  
+  .muted {
+    color: #9aa7b1;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 16px;
+  }
+  
+  .btn-primary {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(168,85,247,0.4);
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(168,85,247,0.5);
+  }
+  
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  #canvas {
+    background: #0d1117;
+    border: 3px solid #1f2937;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    max-width: 100%;
+    display: block;
+    margin: 20px auto;
+    cursor: pointer;
+  }
+  
+  #game-info {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    border: 2px solid #4c1d95;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .stat {
+    text-align: center;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+  }
+  
+  .stat-value {
+    font-size: 28px;
+    font-weight: 900;
+    color: #fbbf24;
+    text-shadow: 0 2px 10px rgba(251,191,36,0.5);
+  }
+  
+  .lives {
+    font-size: 32px;
+  }
+  
+  #target-display {
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+    border: 3px solid #a855f7;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(168,85,247,0.4);
+  }
+  
+  #target-display h2 {
+    font-size: 18px;
+    color: #e0e7ff;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  
+  #target-color {
+    font-size: 48px;
+    font-weight: 900;
+    animation: pulse 1s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  
+  #status {
+    margin-top: 15px;
+    font-size: 13px;
+    line-height: 1.5;
+    background: #0f151a;
+    border: 1px solid #1f2a32;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  
+  #status b { color: #cde7d8; }
+  #status .ok { color: #4ade80; }
+  #status .warn { color: #fbbf24; }
+  #status .err { color: #f87171; }
+  #status a { color: #86c6ff; text-decoration: none; }
+  
+  #play-again {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 10px 40px rgba(168,85,247,0.5);
+    z-index: 50;
+  }
+  
+  .game-instructions {
+    background: rgba(15,23,42,0.8);
+    border: 2px solid #1e293b;
+    border-radius: 12px;
+    padding: 15px;
+    margin: 15px 0;
+  }
+  
+  .game-instructions h3 {
+    color: #a855f7;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  
+  .game-instructions ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .game-instructions li {
+    padding: 5px 0;
+    font-size: 14px;
+    color: #cbd5e1;
+  }
+  
+  @media (max-width: 720px) {
+    #game-info { padding: 15px; gap: 15px; }
+    .stat-value { font-size: 24px; }
+    #target-color { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Intro Overlay -->
+    <div id="intro-overlay" class="overlay">
+      <div class="card" role="dialog" aria-modal="true">
+        <h1>🎨 Play Quick Color Tap 3D</h1>
+        <p class="muted">A small Base transfer is required to start playing (mobile & desktop supported).</p>
+        
+        <div class="game-instructions">
+          <h3>🎯 How to Play</h3>
+          <ul>
+            <li>🟢 Tap only cubes that match the target color</li>
+            <li>❤️ 3 lives - lose one for each wrong tap</li>
+            <li>⏱️ 30 seconds to score as many points as possible</li>
+            <li>⭐ Correct tap = +10 points</li>
+          </ul>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div class="muted" style="font-size: 12px;">Change recipient/amount in code if needed.</div>
+          <button id="play" class="btn-primary">💰 Pay & Play</button>
+        </div>
+        <div id="status" class="hidden"></div>
+      </div>
+    </div>
+
+    <div id="target-display" class="hidden">
+      <h2>🎯 TAP THIS COLOR:</h2>
+      <div id="target-color">🔴 Red</div>
+    </div>
+
+    <canvas id="canvas" width="900" height="700"></canvas>
+    
+    <div id="game-info" class="hidden">
+      <div class="stat">
+        <div class="stat-label">Score</div>
+        <div class="stat-value" id="score-display">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" id="time-display">30s</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Lives</div>
+        <div class="stat-value lives" id="lives-display">❤️❤️❤️</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">High Score</div>
+        <div class="stat-value" id="high-score-display">0</div>
+      </div>
+    </div>
+
+    <button id="play-again" class="hidden">💰 Pay & Play Again</button>
+  </div>
+
+<script type="module">
+import sdk from 'https://esm.sh/@farcaster/frame-sdk';
+await sdk.actions.ready();
+
+/* ===== CONFIG ===== */
+const USE_BASE_SEPOLIA = false;
+const RECIPIENT = "0x02212a875c56baE7AF27A5a389FD4e8A11442692";
+const AMOUNT_ETH = "0.00001";
+
+const BASE_MAINNET = { chainId: "0x2105",  explorer: "https://basescan.org/tx/" };
+const BASE_SEPOLIA = { chainId: "0x14a34", explorer: "https://sepolia.basescan.org/tx/" };
+const TARGET = USE_BASE_SEPOLIA ? BASE_SEPOLIA : BASE_MAINNET;
+
+/* ===== DOM ===== */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+const playBtn = document.getElementById('play');
+const playAgainBtn = document.getElementById('play-again');
+const gameInfoEl = document.getElementById('game-info');
+const targetDisplayEl = document.getElementById('target-display');
+const targetColorEl = document.getElementById('target-color');
+const scoreDisplayEl = document.getElementById('score-display');
+const timeDisplayEl = document.getElementById('time-display');
+const livesDisplayEl = document.getElementById('lives-display');
+const highScoreDisplayEl = document.getElementById('high-score-display');
+
+const showStatus = () => statusEl.classList.remove('hidden');
+const addLine = html => { showStatus(); statusEl.insertAdjacentHTML('beforeend', `<div>${html}</div>`); };
+const clearStatus = () => statusEl.innerHTML = '';
+const disable = (el, yes=true) => { if (el) el.disabled = yes; };
+
+/* ===== Wallet Helpers ===== */
+function parseEther(x) {
+  const [w, f=""] = String(x).split('.');
+  const frac = (f + '0'.repeat(18)).slice(0, 18);
+  return '0x' + (BigInt(w) * 10n**18n + BigInt(frac)).toString(16);
+}
+
+async function getProvider() {
+  try {
+    const p = await sdk.wallet.ethProvider;
+    if (p) return p;
+  } catch {}
+  return window.ethereum ?? null;
+}
+
+async function ensureChain(provider, chainId) {
+  const current = (await provider.request({ method: 'eth_chainId' }))?.toLowerCase();
+  if (current === chainId.toLowerCase()) return;
+  try {
+    await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
+  } catch (e) {
+    if (e?.code === 4902) {
+      await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId }] });
+      await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
+    } else { throw e; }
+  }
+}
+
+async function requiredPayment() {
+  clearStatus();
+  addLine(`<b>Step 1:</b> Locating wallet provider…`);
+  const provider = await getProvider();
+  if (!provider) {
+    addLine(`<span class="err">No wallet available.</span> Open in Farcaster or enable a wallet.`);
+    throw new Error('NO_PROVIDER');
+  }
+  addLine(`<span class="ok">Provider ready.</span>`);
+
+  addLine(`<b>Step 2:</b> Requesting accounts…`);
+  const [from] = await provider.request({ method: 'eth_requestAccounts' });
+  addLine(`<span class="ok">Account: ${from.slice(0,6)}…${from.slice(-4)}</span>`);
+
+  addLine(`<b>Step 3:</b> Switching to Base${USE_BASE_SEPOLIA?' Sepolia':''}…`);
+  await ensureChain(provider, TARGET.chainId);
+  addLine(`<span class="ok">On Base${USE_BASE_SEPOLIA?' Sepolia':''}.</span>`);
+
+  addLine(`<b>Step 4:</b> Sending ${AMOUNT_ETH} ETH to ${RECIPIENT.slice(0,6)}…${RECIPIENT.slice(-4)}…`);
+  const hash = await provider.request({
+    method: 'eth_sendTransaction',
+    params: [{ from, to: RECIPIENT, value: parseEther(AMOUNT_ETH) }]
+  });
+  addLine(`<span class="ok">TX sent.</span> <a target="_blank" rel="noopener" href="${TARGET.explorer}${hash}">View on Basescan</a>`);
+  return hash;
+}
+
+async function payThen(action, triggerBtn) {
+  try {
+    disable(triggerBtn, true);
+    await requiredPayment();
+    await action();
+  } catch (e) {
+    console.warn('Payment gate blocked action:', e);
+    addLine(`<span class="warn">Payment required. Please try again.</span>`);
+  } finally {
+    disable(triggerBtn, false);
+  }
+}
+
+/* ===== Game State ===== */
+const colors = [
+  { name: 'red', hex: '#ff0000', display: '🔴 Red' },
+  { name: 'blue', hex: '#0066ff', display: '🔵 Blue' },
+  { name: 'green', hex: '#00ff00', display: '🟢 Green' },
+  { name: 'yellow', hex: '#ffff00', display: '🟡 Yellow' },
+  { name: 'purple', hex: '#ff00ff', display: '🟣 Purple' },
+  { name: 'orange', hex: '#ff8800', display: '🟠 Orange' }
+];
+
+let gameState = {
+  cubes: [],
+  score: 0,
+  lives: 3,
+  timeLeft: 30,
+  gameActive: false,
+  targetColor: 'red',
+  highScore: 0,
+  timerInterval: null
+};
+
+/* ===== Create Cubes ===== */
+function createCubes() {
+  gameState.cubes = [];
+  const rows = 4;
+  const cols = 4;
+  const cubeSize = 100;
+  const gap = 20;
+  const totalWidth = cols * cubeSize + (cols - 1) * gap;
+  const totalHeight = rows * cubeSize + (rows - 1) * gap;
+  const startX = (canvas.width - totalWidth) / 2;
+  const startY = (canvas.height - totalHeight) / 2;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      gameState.cubes.push({
+        x: startX + col * (cubeSize + gap),
+        y: startY + row * (cubeSize + gap),
+        size: cubeSize,
+        color: randomColor,
+        scale: 1,
+        targetScale: 1,
+        rotation: 0,
+        glowIntensity: 0
+      });
+    }
+  }
+}
+
+/* ===== Pick Target Color ===== */
+function pickTargetColor() {
+  const availableColors = gameState.cubes.map(c => c.color.name);
+  const uniqueColors = [...new Set(availableColors)];
+  const newColor = uniqueColors[Math.floor(Math.random() * uniqueColors.length)];
+  gameState.targetColor = newColor;
+  
+  const colorObj = colors.find(c => c.name === newColor);
+  targetColorEl.textContent = colorObj.display;
+}
+
+/* ===== Draw Functions ===== */
+function drawCube(cube) {
+  ctx.save();
+  ctx.translate(cube.x + cube.size / 2, cube.y + cube.size / 2);
+  ctx.scale(cube.scale, cube.scale);
+  ctx.rotate(cube.rotation);
+  
+  // Shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetX = 5;
+  ctx.shadowOffsetY = 5;
+  
+  // Cube face
+  const gradient = ctx.createLinearGradient(-cube.size/2, -cube.size/2, cube.size/2, cube.size/2);
+  gradient.addColorStop(0, cube.color.hex);
+  gradient.addColorStop(1, adjustBrightness(cube.color.hex, -30));
+  
+  ctx.fillStyle = gradient;
+  ctx.fillRect(-cube.size / 2, -cube.size / 2, cube.size, cube.size);
+  
+  // Glow effect for target color
+  if (cube.color.name === gameState.targetColor && gameState.gameActive) {
+    cube.glowIntensity = 0.3 + Math.sin(Date.now() * 0.005) * 0.2;
+    ctx.strokeStyle = cube.color.hex;
+    ctx.lineWidth = 5;
+    ctx.globalAlpha = cube.glowIntensity;
+    ctx.strokeRect(-cube.size / 2 - 5, -cube.size / 2 - 5, cube.size + 10, cube.size + 10);
+    ctx.globalAlpha = 1;
+  }
+  
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillRect(-cube.size / 2 + 10, -cube.size / 2 + 10, cube.size / 3, cube.size / 3);
+  
+  ctx.restore();
+}
+
+function adjustBrightness(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = (num >> 16) + amt;
+  const G = (num >> 8 & 0x00FF) + amt;
+  const B = (num & 0x0000FF) + amt;
+  return '#' + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 +
+    (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255))
+    .toString(16).slice(1);
+}
+
+function drawParticles(x, y, color, isCorrect) {
+  const particleCount = isCorrect ? 20 : 10;
+  const particles = [];
+  
+  for (let i = 0; i < particleCount; i++) {
+    const angle = (i / particleCount) * Math.PI * 2;
+    const speed = 3;
+    particles.push({
+      x: x,
+      y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 30,
+      color: color
+    });
+  }
+  
+  function animateParticles() {
+    particles.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life / 30;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.95;
+      p.vy *= 0.95;
+      p.life--;
+    });
+    ctx.globalAlpha = 1;
+    
+    if (particles.some(p => p.life > 0)) {
+      requestAnimationFrame(animateParticles);
+    }
+  }
+  
+  animateParticles();
+}
+
+/* ===== Game Loop ===== */
+function gameLoop() {
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Animate cubes
+  gameState.cubes.forEach(cube => {
+    const diff = cube.targetScale - cube.scale;
+    cube.scale += diff * 0.2;
+    cube.rotation += 0.01;
+    drawCube(cube);
+  });
+  
+  requestAnimationFrame(gameLoop);
+}
+
+/* ===== Handle Click ===== */
+function handleCanvasClick(event) {
+  if (!gameState.gameActive) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  
+  for (const cube of gameState.cubes) {
+    if (x >= cube.x && x <= cube.x + cube.size &&
+        y >= cube.y && y <= cube.y + cube.size) {
+      
+      if (cube.color.name === gameState.targetColor) {
+        // Correct!
+        gameState.score += 10;
+        cube.targetScale = 1.3;
+        drawParticles(cube.x + cube.size / 2, cube.y + cube.size / 2, cube.color.hex, true);
+        
+        setTimeout(() => {
+          cube.color = colors[Math.floor(Math.random() * colors.length)];
+          cube.targetScale = 1;
+          pickTargetColor();
+        }, 200);
+      } else {
+        // Wrong!
+        gameState.lives--;
+        cube.targetScale = 0.7;
+        drawParticles(cube.x + cube.size / 2, cube.y + cube.size / 2, '#ff0000', false);
+        
+        setTimeout(() => {
+          cube.targetScale = 1;
+        }, 300);
+        
+        if (gameState.lives <= 0) {
+          endGame();
+        }
+      }
+      
+      updateDisplay();
+      break;
+    }
+  }
+}
+
+/* ===== Update Display ===== */
+function updateDisplay() {
+  scoreDisplayEl.textContent = gameState.score;
+  timeDisplayEl.textContent = gameState.timeLeft + 's';
+  livesDisplayEl.textContent = '❤️'.repeat(gameState.lives);
+  highScoreDisplayEl.textContent = gameState.highScore;
+}
+
+/* ===== Timer ===== */
+function startTimer() {
+  gameState.timerInterval = setInterval(() => {
+    gameState.timeLeft--;
+    updateDisplay();
+    
+    if (gameState.timeLeft <= 0) {
+      endGame();
+    }
+  }, 1000);
+}
+
+/* ===== End Game ===== */
+function endGame() {
+  gameState.gameActive = false;
+  clearInterval(gameState.timerInterval);
+  
+  if (gameState.score > gameState.highScore) {
+    gameState.highScore = gameState.score;
+  }
+  
+  ctx.fillStyle = 'rgba(0,0,0,0.8)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.fillStyle = '#e7ecf0';
+  ctx.font = 'bold 48px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 80);
+  
+  ctx.font = 'bold 36px system-ui';
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillText('Final Score: ' + gameState.score, canvas.width / 2, canvas.height / 2 - 20);
+  
+  if (gameState.score > gameState.highScore - 10) {
+    ctx.font = 'bold 24px system-ui';
+    ctx.fillStyle = '#4ade80';
+    ctx.fillText('🎉 New High Score! 🎉', canvas.width / 2, canvas.height / 2 + 30);
+  }
+  
+  ctx.font = '18px system-ui';
+  ctx.fillStyle = '#a8b6c1';
+  ctx.fillText('Click button below to continue', canvas.width / 2, canvas.height / 2 + 80);
+  
+  playAgainBtn.classList.remove('hidden');
+}
+
+/* ===== Start Game ===== */
+function startGame() {
+  gameState.score = 0;
+  gameState.lives = 3;
+  gameState.timeLeft = 30;
+  gameState.gameActive = true;
+  
+  createCubes();
+  pickTargetColor();
+  updateDisplay();
+  startTimer();
+  
+  document.getElementById('intro-overlay').classList.add('hidden');
+  gameInfoEl.classList.remove('hidden');
+  targetDisplayEl.classList.remove('hidden');
+  playAgainBtn.classList.add('hidden');
+  
+  gameLoop();
+}
+
+/* ===== Event Listeners ===== */
+canvas.addEventListener('click', handleCanvasClick);
+
+playBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  payThen(startGame, playBtn);
+});
+
+playAgainBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  payThen(startGame, playAgainBtn);
+});
+
+// Error handling
+window.addEventListener('error', e => console.error('Error:', e.error || e));
+window.addEventListener('unhandledrejection', e => console.error('Unhandled promise:', e.reason));
+</script>
+</body>
+</html>
