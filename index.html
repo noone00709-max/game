@@ -529,8 +529,10 @@ function handleCanvasClick(event) {
   if (!gameState.gameActive) return;
   
   const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (event.clientX - rect.left) * scaleX;
+  const y = (event.clientY - rect.top) * scaleY;
   
   for (const cube of gameState.cubes) {
     if (x >= cube.x && x <= cube.x + cube.size &&
